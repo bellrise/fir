@@ -21,5 +21,5 @@ There is a certain set of rules you need to abide when contributing.
   - Use the `subject: Title` format in the first line
   - Keep the commit messages informative, never use 'clean up' or 'fixes' as
     the title
-  - The subject can is a single word or filename, like `python` for the python
+  - The subject is a single word or filename, like `python` for the python
     client or `meta` for anything that isn't code, like this readme

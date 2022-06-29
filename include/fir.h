@@ -21,6 +21,10 @@
 #define FIR_PORT        7708
 
 
+/* The packet header size in bytes should be exactly this value. */
+#define FIR_HEADER_SIZE 16
+
+
 /* Fir packet version. The f_ver field in the packet header is set to this
    value, so other devices know whether the asking device is using the proper
    protocol version. */
@@ -49,7 +53,7 @@ struct _fir_packed_ fir_packet_header
 	uint16_t f_time;                /* time sent */
 	uint16_t f_size;                /* payload size */
 	uint8_t  f_ptype;               /* one of fir_payload_type */
-	uint8_t  f__0;
+	uint8_t  f__0[7];
 };
 
 
