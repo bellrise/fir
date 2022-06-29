@@ -3,6 +3,7 @@
 # Copyright (c) 2022 bellrise
 
 import struct
+import time
 
 
 # The Fir Protocol listens on this port.
@@ -58,7 +59,12 @@ class PacketHeader:
     def create(cls, type_: int, size: int, ptype: int):
         # Create a new packet with the specified values. time & ver will be
         # automatically filled.
-        return cls(fields={'type': type_, 'size': size, 'ptype': ptype})
+        t = int(time.time()).to_bytes(4, 'big', signed=False)[2:]
+        t = int.from_bytes(t, 'big', signed=False)
+        return cls(fields={
+            'ver': FIR_PROT_VER, 'type': type_, 'time': t, 'size': size,
+            'ptype': ptype
+        })
 
     def as_bytes(self) -> bytes:
         # Returns the header in byte form.
