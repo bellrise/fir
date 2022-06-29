@@ -37,21 +37,33 @@ class PacketHeader:
     __size: int = 0
     __ptype: int = 0
 
-    def __init__(self, buf: bytes = None):
+    def __init__(self, buf: bytes = None, *, fields: dict = None):
         # Create the class, and if `buf` is given, read the header from there.
+        if fields:
+            for k, v in fields.items():
+                self.__dict__[f'_PacketHeader__{k}'] = v
+            return
+
         if buf and len(buf) < FIR_HEADER_SIZE:
             raise BufferError(f'buffer too small (<{FIR_HEADER_SIZE} bytes)')
-        stuff = struct.unpack('!HHHHB7p', buf)
+        stuff = struct.unpack('!HHHHB7s', buf)
         if len(stuff) < 5:
             raise BufferError('failed to unpack buffer')
 
         # Assign stuff to the class
-        self.__ver, self.__type, self.__time, self.__size, self.__ptype
+        self.__ver, self.__type, self.__time, self.__size, self.__ptype \
             = stuff[:5]
+
+    @classmethod
+    def create(cls, type_: int, size: int, ptype: int):
+        # Create a new packet with the specified values. time & ver will be
+        # automatically filled.
+        return cls(fields={'type': type_, 'size': size, 'ptype': ptype})
 
     def as_bytes(self) -> bytes:
         # Returns the header in byte form.
-        buf = struct.pack('!HHHHB7p', self.__ver, self.__type, self.__time,
+        buf = struct.pack('!HHHHB7s', self.__ver, self.__type, self.__time,
                 self.__size, self.__ptype, b'\0' * 7)
         if len(buf) != FIR_HEADER_SIZE:
             raise BufferError('failed to pack header, invalid length')
+        return buf
