@@ -1,0 +1,8 @@
+Fir Network
+===========
+
+The Fir network is used for encrypted peer-to-peer communication. This includes
+sending messages, files & commands to the other device. Each device can have
+its own commands, for example a PC can have a volume selector which you can
+change using your smartphone via Wi-Fi or Bluetooth without even leaving the
+couch.
