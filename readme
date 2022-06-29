@@ -6,3 +6,20 @@ sending messages, files & commands to the other device. Each device can have
 its own commands, for example a PC can have a volume selector which you can
 change using your smartphone via Wi-Fi or Bluetooth without even leaving the
 couch.
+
+
+Contributing
+------------
+
+There is a certain set of rules you need to abide when contributing.
+
+* Keep the style the same as the code around you
+* Don't step on other's people toes - make your own branch
+* Each source file must contain a copyright line with your name/username & date
+* When changing something in an existing file, add your name to the copyright line
+* Commit message rules:
+  - Use the `subject: Title` format in the first line
+  - Keep the commit messages informative, never use 'clean up' or 'fixes' as
+    the title
+  - The subject can is a single word or filename, like `python` for the python
+    client or `meta` for anything that isn't code, like this readme
