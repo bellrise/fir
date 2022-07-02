@@ -35,6 +35,8 @@ def __scan_one(addr: str, port: int, do_log: bool) -> Optional[ScanResult]:
     try:
         sock.connect((addr, port))
         sock.close()
+        if do_log:
+            print('Found device at %s:%d' % (addr, port))
         return ScanResult('<name>', addr, port)
     except OSError:
         return None
@@ -51,8 +53,8 @@ def scan(port: int, do_log=False) -> List[Optional[ScanResult]]:
     args = []
     for i in range(2, 255):
         # Skip ourselfs
-        if i == d:
-            continue
+        # if i == d:
+        #    continue
         ip = '%s.%s.%s.%d' % (a, b, c, i)
         args.append((ip, port, do_log))
 
