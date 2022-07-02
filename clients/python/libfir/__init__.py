@@ -3,7 +3,10 @@
 
 from typing import Optional, List
 import concurrent.futures
+import weakref
 import socket
+
+__all__ = ["ScanResult", "scan"]
 
 
 class ScanResult:
@@ -24,8 +27,7 @@ class ScanResult:
         return '<%s %s:%d>' % (self.name, self.addr, self.port)
 
 
-def __scan_one(args) -> Optional[ScanResult]:
-    addr, port, do_log = args
+def __scan_one(addr: str, port: int, do_log: bool) -> Optional[ScanResult]:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
     sock.settimeout(10)
     if do_log:
@@ -34,11 +36,11 @@ def __scan_one(args) -> Optional[ScanResult]:
         sock.connect((addr, port))
         sock.close()
         return ScanResult('<name>', addr, port)
-    except (OSError, KeyboardInterrupt):
+    except OSError:
         return None
 
 
-def scan(port: int, do_log=False) -> List[ScanResult]:
+def scan(port: int, do_log=False) -> List[Optional[ScanResult]]:
     """Scan the local network for open Fir clients on the given port.
     Currently only scans all user addresses in the range of the /24
     network mask. Returns a list of ScanResults. """
@@ -54,12 +56,17 @@ def scan(port: int, do_log=False) -> List[ScanResult]:
         ip = '%s.%s.%s.%d' % (a, b, c, i)
         args.append((ip, port, do_log))
 
-    with concurrent.futures.ThreadPoolExecutor(32) as executor:
-        results = executor.map(__scan_one, args)
-
-    real_res = []
-    for res in results:
-        if res:
-            real_res.append(res)
-
-    return res
+    executor = None
+    results = []
+    try:
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=32)
+        futures = []
+        for argset in args:
+            futures.append(executor.submit(__scan_one, *argset))
+        for fut in futures:
+            results.append(fut.result())
+        executor.shutdown()
+    except KeyboardInterrupt:
+        print('\r  \r', end='')
+        executor.shutdown(wait=False, cancel_futures=True)
+    return results
