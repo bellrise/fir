@@ -2,7 +2,9 @@
 # Fir client based around a command-line interface.
 # Copyright (c) 2022 bellrise <bellrise.dev@gmail.com>
 
-from libfir import client, device, protocol as prot
+from libfir import device, protocol as prot
+from typing import Optional, Union
+import fir_client
 import libfir
 import string
 import socket
@@ -11,13 +13,7 @@ import socket
 __version__ = '0.0.1'
 
 
-global_status: str = '\033[90moffline\033[0m'
-global_client: client.Client = None
-
-
-def get_local_ip() -> str:
-    """Returns the local interface IPv4 address. """
-    return socket.gethostbyname(socket.gethostname())
+_client: fir_client.Client = None
 
 
 def error(*strs):
@@ -26,35 +22,38 @@ def error(*strs):
     print('\033[91merror:\033[0m ' + strs)
 
 
-def open_device(args: str):
-    # TODO: open the device
-    print(args)
+def validate_port(port: Union[str, int]) -> Optional[int]:
+    """Validate the given port and return the correct port or None
+    if something is invalid. """
+
+    if isinstance(port, str):
+        if not port:
+            return None
+        if not port.isnumeric():
+            error(f'invalid port `{args}`: should be a number')
+            return None
+        port = int(args)
+
+    if port <= 0 or port >= 65535:
+        error(f'invalid port `{port}`: ports are in the 0 < port < 65535 range')
+        return None
+
+    return port
 
 
 def scan(args: str):
-    if not args:
-        args = prot.FIR_PORT
-    elif not args.isnumeric():
-        error(f'invalid port `{args}`: should be a number')
+    """Scan the local network for open devices. """
+    port = validate_port(args) if args else prot.FIR_PORT
+    if not port:
         return
-
-    port = int(args)
-    if port <= 0 or port >= 65535:
-        error(f'invalid port `{port}`: ports are in the 0 < port < 65535 range')
-        return
-
-    print('Scanning ...')
-    results = libfir.scan(port)
-
-    if not results:
-        print('No open devices found')
-    else:
-        print(f'Found {len(results)} devices')
-        for res in results:
-            print(res)
+    _client.scan(port)
 
 
 def ping(args: str):
+    # ping <addr> [port]
+    if not args:
+        error('missing `addr` argument')
+        return
     args = args.split()
     if len(args) > 1:
         port = args[1]
@@ -76,8 +75,6 @@ def usage():
     print('Available commands:\n')
     print(
         'help               show this page',
-        'open [port]        open a port for others to connect (default: '
-        f'{prot.FIR_PORT})',
         'scan [port]        scan the local network for open Fir clients '
         f'on the given port (default: {prot.FIR_PORT})',
         'ping <addr> [port] ping the given address on the port (default: '
@@ -96,7 +93,6 @@ def run_cmd(cmd):
 
     callmap = {
         'help': (usage, ()),
-        'open': (open_device, (args, )),
         'scan': (scan, (args, )),
         'ping': (ping, (args, ))
     }
@@ -106,19 +102,26 @@ def run_cmd(cmd):
     else:
         error(f'Unknown command `{cmd}`, try `help`')
 
+
 def main():
-    global global_client
+    global _client
+    _client = fir_client.Client()
 
     print(f'\033[1;98mFir client {__version__}\033[0m')
-    print(f'\033[90mClient IP: {get_local_ip()}\033[0m')
+    print(f'\033[90mClient IP: {_client._get_local_ip()}\033[0m')
     print(f'\033[90mDefault port: {prot.FIR_PORT}\033[0m')
     print(f'\033[90mProtocol ver: {prot.FIR_PROT_VER}\033[0m')
 
-    global_client = client.Client()
-
     while True:
         try:
-            cmd = input(f'[{global_status}] ')
+            s = _client.status
+            if s == 'offline':
+                s = '\033[90moffline\033[0m'
+            if s == 'open':
+                s = '\033[96mopen\033[0m'
+            if s == 'paired':
+                s = '\033[92mpaired\033[0m'
+            cmd = input(f'[{s}] ')
             run_cmd(cmd)
         except (KeyboardInterrupt, EOFError):
             print()
