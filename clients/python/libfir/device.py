@@ -1,7 +1,10 @@
 # Fir device used by the client.
 # Copyright (c) 2022 bellrise <bellrise.dev@gmail.com>
 
+from typing import Optional
 import socket
+
+__all__ = ["Device"]
 
 
 class Device:
@@ -30,10 +33,21 @@ class Device:
         self.port = port
 
     def pair(self):
-        """Try pairing with the device. """
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+        """Try pairing with the device. This connects this host to the device,
+        so no other devices can use it. """
+        raise NotImplemented('pairing with devices')
+
+    def ping(self) -> Optional[tuple]:
+        """Ping the device, even if not paired. The pinged device should return
+        its chosen name, which is then automatically assigned to the `name`
+        field in this class. """
+        if self.is_paired:
+            raise NotImplemented('ping when paired')
+
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
         try:
-            self.sock.connect((self.addr, self.port))
+            sock.connect((self.addr, self.port))
         except OSError:
-            raise ConnectionError('no route to host %s:%d' \
-                    % (self.addr, self.port))
+            return None
+
+        sock.close()
